@@ -1,5 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h> 
+#include <pthread.h>
+
+
+long* arr;
+long size;
+long x;
+long res;
+int n;
+int id = -1;
 // A recursive binary search function. It returns location of x in
 // given array arr[l..r] is present, otherwise -1
 long binarySearch(long arr[], long l, long r, long x)
@@ -22,40 +31,30 @@ long binarySearch(long arr[], long l, long r, long x)
    // We reach here when element is not present in array
    return -1;
 }
- 
+
+void myThread() {
+	id++;
+	long temp = binarySearch(arr, id*size/n, ((id+1)*size/n) - 1, x);
+	if (temp != -1) 
+		printf("T RES %ld\n", temp);
+}
+
 int main(int argc, char* argv[]) {
 	if ( argc != 3 ) {
 		printf("Not Enough Argument\n");
 		return 1;
 	}
-	long size = strtol(argv[1], NULL, 10);
-	long* arr = (long*)(malloc(size * sizeof(long)));
-   	long x = strtol(argv[2], NULL, 10);
+	size = strtol(argv[1], NULL, 10);
+	arr = (long*)(malloc(size * sizeof(long)));
+   	x = strtol(argv[2], NULL, 10);
    	for (size_t i = 0; i < size; i++) arr[i] = i*2;
-
-	pid_t pids[10];
+	n = 4;
 	int i;
-	int n = 10;
-	/* Start children. */
-	for (i = 0; i < n; ++i) {
-  		if ((pids[i] = fork()) < 0) {
-    			perror("fork");
-    			abort();
-  		} else if (pids[i] == 0) {
-			long temp = binarySearch(arr, i*size/n, ((i+1)*size/n) - 1, x);
-    			if (temp != -1)
-                        	printf("Element is present at index %ld TEMP\n", temp);
-			exit(0);
-  		}
-	}
-
-	/* Wait for children to exit. */
-	int status;
-	pid_t pid;
-	while (n > 0) {
-  		pid = wait(&status);
-  		--n;  // TODO(pts): Remove pid from the pids array.
-	}
+	pthread_t tid;
+	for (i = 0; i < n; i++)
+		pthread_create(&tid, NULL, myThread, (void*)i);
+    	pthread_exit(NULL);
 
    	return 0;
+
 }
